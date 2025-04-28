@@ -20,7 +20,6 @@ from rich.align import Align
 from rich import box
 from rich.table import Table
 
-# Al inicio del archivo, justo después de los imports:
 prev_disk = None
 prev_net = None
 prev_time = None
@@ -276,24 +275,34 @@ def build_npu_panel():
 
 def build_mem_panel():
     vm, sm = get_mem_info()
-    ram_info = f"{human_bytes(vm.used)} / {human_bytes(vm.total)}"
+    used_plus_cached = vm.used + vm.cached
+    ram_info = f"{human_bytes(used_plus_cached)} / {human_bytes(vm.total)}"
     swap_info = f"{human_bytes(sm.used)} / {human_bytes(sm.total)}"
     cached = human_bytes(getattr(vm, 'cached', 0))
     shared = human_bytes(getattr(vm, 'shared', 0))
     free = human_bytes(vm.available)
     total = human_bytes(vm.total)
-    zused, ztot = '-', '-'
+    ram_used = human_bytes(vm.used)
+    zused, ztot = 0, 0
     try:
         with open('/sys/block/zram0/mm_stat') as f:
             parts = f.read().split()
-            ztot = int(parts[3])
-            zused = int(parts[5])
-    except: pass
+            orig = int(parts[0])
+            compr = int(parts[1])
+            used = int(parts[2])
+            limit = int(parts[3])
+            zused = used  # Uso de RAM por ZRAM
+            ztot = limit  # Límite de ZRAM
+    except:
+        pass
+
     zram_info = f"{human_bytes(zused)} / {human_bytes(ztot)}"
+    zram_pct = (zused / ztot * 100) if ztot > 0 else 0 
 
     details = (
         f"[bold]Total:[/bold] {total}\n"
         f"[bold]Libre:[/bold] {free}\n"
+        f"[bold]Usada:[/bold] {ram_used}\n"
         f"[bold]Caché:[/bold] {cached}\n"
         f"[bold]Compartida:[/bold] {shared}\n"
     )
@@ -305,9 +314,8 @@ def build_mem_panel():
     )
     progress.add_task("RAM", total=100, completed=vm.percent, info=ram_info)
     progress.add_task("Swap", total=100, completed=sm.percent, info=swap_info)
-    # Añadimos ZRAM como tercera barra
-    zram_pct = (zused / ztot * 100) if ztot > 0 else 0
     progress.add_task("ZRAM",  total=100, completed=zram_pct, info=zram_info)
+
     return Panel(Group(progress, details), title="Memoria", padding=(1,2), box=box.ROUNDED)
 
 def build_io_table():

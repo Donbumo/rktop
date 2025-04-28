@@ -1,5 +1,5 @@
 # rktop
-Simple top-like script for Rockhip NPUs on Linux
+Simple top-like script for Rockhip boards on Linux
 
 ## Installing
 ### Quick Install 
@@ -29,10 +29,11 @@ If you followed quick install, just enter `sudo rktop` on your shell
 ## Proximamente
 
 parameters for cli
+
 RGA support 
+
 hot keys for UI
 
 ## Screenshots
 
 ![Full View](full.png)
-
